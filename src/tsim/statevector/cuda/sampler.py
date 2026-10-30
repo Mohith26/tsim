@@ -446,10 +446,12 @@ class CudaShotSampler:
         constant: np.ndarray,
         expectations: bool,
         launch: _Launch,
+        every_row: bool,
     ) -> tuple[Any, Any, Any, Any]:
         """Sample one batch on the device: ``(words, accepted, count, values)``.
 
-        ``launch`` holds the channels that the noise kernel draws.
+        ``launch`` holds the channels that the noise kernel draws; without
+        ``every_row`` only the rows of the shots that pass the screen are written.
         """
         cp = self._cp
         layout = self.layout
@@ -486,6 +488,7 @@ class CudaShotSampler:
                 module.kept,
                 queue,
                 counts[0:1],
+                np.int32(every_row),
             ),
             shared_mem=8 * launch.max_events,
         )
@@ -644,7 +647,7 @@ class CudaShotSampler:
         for start in range(0, shots, batch):
             n = min(batch, shots - start)
             words, _, counts, _ = self._run_batch(
-                module, n, start, constant, False, self._all
+                module, n, start, constant, False, self._all, True
             )
             words.get(out=out[start : start + n])
             deviation = max(deviation, self._deviation(counts))
@@ -693,6 +696,7 @@ class CudaShotSampler:
                 constant,
                 expectations,
                 split[0] if split else self._all,
+                False,
             )
             if mask is None:
                 count, index = n, None
