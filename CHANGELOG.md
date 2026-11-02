@@ -26,6 +26,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   equal histories share one state vector, which splits at measurements, and
   shots that a postselected component detector discards stop being simulated
   there. (#198)
+- Parametric tags accept positional angles in units of pi, as in the shorthand:
+  `I[R_X(0.1)] 0` is `R_X(0.1) 0`, `I[U3(0.3, 0.24, 0.49)] 0` is
+  `U3(0.3, 0.24, 0.49) 0`, and `SPP[R_PAULI(0.1)] X0*Y1` is
+  `R_PAULI(0.1) X0*Y1`. The keyword form (`R_X(theta=0.1*pi)`) still works;
+  program text is canonicalized to it. Empty angle fields, as in
+  `R_X(theta=0.1*pi,)`, are now rejected in both forms. (#202)
 
 ### Changed
 - The samplers now default to `strategy="active_statevector"`; pass
@@ -94,6 +100,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Internals: the `track_classical_wires` argument of `parse_stim_circuit`, the `tsim.compile.stabrank` module, and `ConnectedComponent`, `connected_components`, `get_params` and `evaluate_graph` from `tsim.core.graph`.
 
 ### Fixed
+- `Circuit.append("R_PAULI", pauli_string, angle)` no longer drops the sign of a
+  `stim.PauliString`: a `-1` sign now reverses the rotation, and a sign of `±i`
+  raises `ValueError`. (#228)
 - `CompiledDetectorSampler.sample` ignored `postselection_mask` for circuits
   without non-direct components, so their discarded rows kept their direct
   observables. A discarded row now keeps its direct detectors and reads `False`
@@ -105,6 +114,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   split into a batch per thread, ran one batch at a time for components so wide
   that only one of the largest batches fits in memory. They now run on as many
   threads as batches of their size allow. (#207)
+- Program text no longer rewrites shorthand inside tags or comments, so tags
+  such as `I[R_X(0.1)]`, `X[U3(0.1, 0.2, 0.3)]` or `H[my T tag]` no longer
+  fail to parse or change. (#202)
+- `SPP` and `SPP_DAG` with a parametric tag other than `R_PAULI` (e.g.
+  `SPP[R_X(theta=0.1*pi)] X0`) now raise instead of acting as a plain `SPP`.
+  (#202)
 
 ## [0.1.5] - 2026-07-21
 
